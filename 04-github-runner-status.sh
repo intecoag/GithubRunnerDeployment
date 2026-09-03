@@ -16,8 +16,13 @@ echo
 
 FOUND=0
 
-while IFS=: read -r USER_NAME _ UID GID _ HOME SHELL; do
+# ============================================================
+# Runner users
+# ============================================================
 
+while IFS=: read -r USER_NAME _ USER_UID USER_GID _ USER_HOME USER_SHELL; do
+
+    # Only consider users created for GitHub runners
     [[ "$USER_NAME" == "${RUNNER_PREFIX}"* ]] || continue
 
     FOUND=1
@@ -27,9 +32,9 @@ while IFS=: read -r USER_NAME _ UID GID _ HOME SHELL; do
 
     echo "Runner:     $RUNNER_ID"
     echo "User:       $USER_NAME"
-    echo "UID:        $UID"
-    echo "Home:       $HOME"
-    echo "Shell:      $SHELL"
+    echo "UID:        $USER_UID"
+    echo "Home:       $USER_HOME"
+    echo "Shell:      $USER_SHELL"
 
     # --------------------------------------------------------
     # Docker access
@@ -52,7 +57,7 @@ while IFS=: read -r USER_NAME _ UID GID _ HOME SHELL; do
     fi
 
     # --------------------------------------------------------
-    # Processes
+    # Runner process
     # --------------------------------------------------------
 
     PROCESS_COUNT=$(
@@ -61,7 +66,7 @@ while IFS=: read -r USER_NAME _ UID GID _ HOME SHELL; do
     )
 
     if [[ "$PROCESS_COUNT" -gt 0 ]]; then
-        echo "Process:    RUNNING"
+        echo "Process:    RUNNING ($PROCESS_COUNT processes)"
     else
         echo "Process:    NOT RUNNING"
     fi
@@ -78,7 +83,7 @@ if [[ "$FOUND" -eq 0 ]]; then
 fi
 
 # ============================================================
-# Services
+# Systemd services
 # ============================================================
 
 echo "GitHub Runner Services"
@@ -93,20 +98,24 @@ SERVICES=$(
 )
 
 if [[ -z "$SERVICES" ]]; then
-    echo "No runner services found."
+    echo "No GitHub runner services found."
 else
     while read -r SERVICE; do
+
         [[ -z "$SERVICE" ]] && continue
 
         ACTIVE=$(systemctl is-active "$SERVICE" 2>/dev/null || true)
         ENABLED=$(systemctl is-enabled "$SERVICE" 2>/dev/null || true)
-        USER=$(systemctl show "$SERVICE" --property=User --value)
+        SERVICE_USER=$(systemctl show "$SERVICE" \
+            --property=User \
+            --value)
 
         echo
         echo "Service:    $SERVICE"
         echo "Active:     $ACTIVE"
         echo "Enabled:    $ENABLED"
-        echo "User:       ${USER:-root}"
+        echo "User:       ${SERVICE_USER:-root}"
+
     done <<< "$SERVICES"
 fi
 
