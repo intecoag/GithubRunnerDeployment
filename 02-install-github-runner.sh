@@ -277,6 +277,21 @@ echo "==> Installing GitHub Actions runner dependencies"
 "$RUNNER_DIR/bin/installdependencies.sh"
 
 # ============================================================
+# Install Azure CLI
+# ============================================================
+
+echo
+echo "==> Installing Azure CLI"
+
+if command -v az &>/dev/null; then
+    echo "Azure CLI is already installed: $(az version --query '"azure-cli"' -o tsv 2>/dev/null || echo unknown)"
+else
+    curl -fsSL https://aka.ms/InstallAzureCLIDeb | bash
+
+    echo "Azure CLI: $(az version --query '"azure-cli"' -o tsv)"
+fi
+
+# ============================================================
 # Configure runner
 # ============================================================
 
